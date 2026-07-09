@@ -1,4 +1,5 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
+import type { Request, Response } from 'express';
 import {
   getStages, getTopicsByStageId, getWeeklyTasksByTopicId,
   getSubmissionsByUserId, createSubmission, updateSubmissionStatus,
@@ -13,11 +14,11 @@ import {
   createWeeklyTask, updateWeeklyTask,
   deleteStage, deleteTopic, deleteWeeklyTask,
   reorderStages, reorderTopics, reorderWeeklyTasks,
-} from './db';
-import { AuthPayload } from './auth';
-import { User } from '../shared/schema';
-import { isTaskComplete, isTopicComplete, missingAchievementTypes, nextStreak, weekKey } from './accountability';
-import { verifyGitHubRepository } from './github';
+} from './db.ts';
+import type { AuthPayload } from './auth.ts';
+import type { User } from '../shared/schema';
+import { isTaskComplete, isTopicComplete, missingAchievementTypes, nextStreak, weekKey } from './accountability.ts';
+import { verifyGitHubRepository } from './github.ts';
 
 const router = Router();
 const milestoneTypes = ['reading', 'video', 'notes', 'coding', 'mini_project', 'quiz', 'discussion'] as const;

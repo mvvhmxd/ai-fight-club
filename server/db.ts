@@ -1,6 +1,6 @@
 import pg from 'pg';
 import { randomUUID } from 'node:crypto';
-import { User, Stage, Topic, WeeklyTask, Submission, Review, Streak, Achievement, DiscussionSession, Excuse } from '../shared/schema';
+import type { User, Stage, Topic, WeeklyTask, Submission, Review, Streak, Achievement, DiscussionSession, Excuse } from '../shared/schema';
 
 const { Pool } = pg;
 

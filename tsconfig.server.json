@@ -5,7 +5,9 @@
     "module": "ES2020",
     "outDir": "./dist",
     "rootDir": ".",
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
   "include": ["api/**/*", "server/**/*", "shared/**/*", "../shared/**/*"],
   "exclude": ["node_modules", "client", "dist", "scripts", "**/*.test.ts"]
