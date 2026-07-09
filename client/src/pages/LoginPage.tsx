@@ -8,6 +8,14 @@ interface LoginPageProps {
   onLogin: (user: User, token: string) => void
 }
 
+function getErrorMessage(err: any, fallback: string) {
+  const error = err.response?.data?.error
+  if (typeof error === 'string') return error
+  if (error?.message && typeof error.message === 'string') return error.message
+  if (err.message && typeof err.message === 'string') return err.message
+  return fallback
+}
+
 export default function LoginPage({ onLogin }: LoginPageProps) {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
@@ -29,7 +37,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
       onLogin(response.data.user, response.data.token)
       navigate('/')
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed')
+      setError(getErrorMessage(err, 'Login failed'))
     } finally {
       setLoading(false)
     }

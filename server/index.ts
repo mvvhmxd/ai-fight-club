@@ -183,7 +183,10 @@ app.use('/api', authMiddleware, apiRouters);
 // Error handler
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('Error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+  const message = process.env.NODE_ENV === 'production'
+    ? 'Internal server error'
+    : err?.message || 'Internal server error';
+  res.status(500).json({ error: message });
 });
 
 if (!process.env.VERCEL) {

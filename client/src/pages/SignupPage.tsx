@@ -8,6 +8,14 @@ interface SignupPageProps {
   onLogin: (user: User, token: string) => void
 }
 
+function getErrorMessage(err: any, fallback: string) {
+  const error = err.response?.data?.error
+  if (typeof error === 'string') return error
+  if (error?.message && typeof error.message === 'string') return error.message
+  if (err.message && typeof err.message === 'string') return err.message
+  return fallback
+}
+
 export default function SignupPage({ onLogin }: SignupPageProps) {
   const navigate = useNavigate()
   const [name, setName] = useState('')
@@ -43,7 +51,7 @@ export default function SignupPage({ onLogin }: SignupPageProps) {
       onLogin(response.data.user, response.data.token)
       navigate('/')
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Signup failed')
+      setError(getErrorMessage(err, 'Signup failed'))
     } finally {
       setLoading(false)
     }
