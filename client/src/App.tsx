@@ -15,6 +15,8 @@ import Progress from './pages/Progress'
 import AdminPanel from './pages/AdminPanel'
 import './App.css'
 
+axios.defaults.baseURL = import.meta.env.VITE_API_URL || ''
+
 interface AuthState {
   user: User | null
   token: string | null

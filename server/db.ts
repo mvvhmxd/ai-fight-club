@@ -1,25 +1,36 @@
-import mysql from 'mysql2/promise';
+import pg from 'pg';
 import { randomUUID } from 'node:crypto';
 import { User, Stage, Topic, WeeklyTask, Submission, Review, Streak, Achievement, DiscussionSession, Excuse } from '../shared/schema';
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || 'password',
-  database: process.env.DB_NAME || 'ai_fight_club',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
+const { Pool } = pg;
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  host: process.env.DATABASE_URL ? undefined : process.env.DB_HOST || 'localhost',
+  user: process.env.DATABASE_URL ? undefined : process.env.DB_USER || 'postgres',
+  password: process.env.DATABASE_URL ? undefined : process.env.DB_PASSWORD || 'password',
+  database: process.env.DATABASE_URL ? undefined : process.env.DB_NAME || 'ai_fight_club',
+  max: Number(process.env.DB_POOL_MAX || 5),
+  ssl: process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('localhost')
+    ? { rejectUnauthorized: false }
+    : undefined,
 });
 
+function normalizeSql(sql: string): string {
+  let index = 0;
+  return sql
+    .replace(/INSERT\s+IGNORE\s+INTO/gi, 'INSERT INTO')
+    .replace(/`([^`]+)`/g, '"$1"')
+    .replace(/"pending"/g, "'pending'")
+    .replace(/"overdue"/g, "'overdue'")
+    .replace(/"member"/g, "'member'")
+    .replace(/"approved"/g, "'approved'")
+    .replace(/\?/g, () => `$${++index}`);
+}
+
 export async function query<T>(sql: string, values?: any[]): Promise<T[]> {
-  const connection = await pool.getConnection();
-  try {
-    const [rows] = await connection.execute(sql, values);
-    return rows as T[];
-  } finally {
-    connection.release();
-  }
+  const result = await pool.query(normalizeSql(sql), values);
+  return result.rows as T[];
 }
 
 export async function queryOne<T>(sql: string, values?: any[]): Promise<T | null> {
@@ -28,13 +39,8 @@ export async function queryOne<T>(sql: string, values?: any[]): Promise<T | null
 }
 
 export async function execute(sql: string, values?: any[]): Promise<any> {
-  const connection = await pool.getConnection();
-  try {
-    const [result] = await connection.execute(sql, values);
-    return result;
-  } finally {
-    connection.release();
-  }
+  const result = await pool.query(normalizeSql(sql), values);
+  return result;
 }
 
 // User queries
@@ -112,23 +118,23 @@ export async function deleteStage(id: string): Promise<void> {
 }
 
 export async function reorderStages(ids: string[]): Promise<void> {
-  const connection = await pool.getConnection();
+  const connection = await pool.connect();
   try {
-    await connection.beginTransaction();
-    const [rows] = await connection.execute('SELECT id FROM `stage` ORDER BY order_index');
-    const existing = (rows as Array<{ id: string }>).map(row => String(row.id));
+    await connection.query('BEGIN');
+    const { rows } = await connection.query(normalizeSql('SELECT id FROM `stage` ORDER BY order_index'));
+    const existing = rows.map(row => String(row.id));
     if (existing.length !== ids.length || existing.some(id => !ids.includes(id))) {
       throw new Error('Stage order must contain every stage exactly once');
     }
     for (let index = 0; index < ids.length; index++) {
-      await connection.execute('UPDATE `stage` SET order_index = ? WHERE id = ?', [-(index + 1000), ids[index]]);
+      await connection.query(normalizeSql('UPDATE `stage` SET order_index = ? WHERE id = ?'), [-(index + 1000), ids[index]]);
     }
     for (let index = 0; index < ids.length; index++) {
-      await connection.execute('UPDATE `stage` SET order_index = ? WHERE id = ?', [index + 1, ids[index]]);
+      await connection.query(normalizeSql('UPDATE `stage` SET order_index = ? WHERE id = ?'), [index + 1, ids[index]]);
     }
-    await connection.commit();
+    await connection.query('COMMIT');
   } catch (error) {
-    await connection.rollback();
+    await connection.query('ROLLBACK');
     throw error;
   } finally {
     connection.release();
@@ -180,26 +186,26 @@ export async function deleteTopic(id: string): Promise<void> {
 }
 
 export async function reorderTopics(stageId: string, ids: string[]): Promise<void> {
-  const connection = await pool.getConnection();
+  const connection = await pool.connect();
   try {
-    await connection.beginTransaction();
-    const [rows] = await connection.execute(
-      'SELECT id FROM `topic` WHERE stage_id = ? ORDER BY order_index',
+    await connection.query('BEGIN');
+    const { rows } = await connection.query(
+      normalizeSql('SELECT id FROM `topic` WHERE stage_id = ? ORDER BY order_index'),
       [stageId]
     );
-    const existing = (rows as Array<{ id: string }>).map(row => String(row.id));
+    const existing = rows.map(row => String(row.id));
     if (existing.length !== ids.length || existing.some(id => !ids.includes(id))) {
       throw new Error('Topic order must contain every topic in the stage exactly once');
     }
     for (let index = 0; index < ids.length; index++) {
-      await connection.execute('UPDATE `topic` SET order_index = ? WHERE id = ?', [-(index + 1000), ids[index]]);
+      await connection.query(normalizeSql('UPDATE `topic` SET order_index = ? WHERE id = ?'), [-(index + 1000), ids[index]]);
     }
     for (let index = 0; index < ids.length; index++) {
-      await connection.execute('UPDATE `topic` SET order_index = ? WHERE id = ?', [index + 1, ids[index]]);
+      await connection.query(normalizeSql('UPDATE `topic` SET order_index = ? WHERE id = ?'), [index + 1, ids[index]]);
     }
-    await connection.commit();
+    await connection.query('COMMIT');
   } catch (error) {
-    await connection.rollback();
+    await connection.query('ROLLBACK');
     throw error;
   } finally {
     connection.release();
@@ -254,23 +260,23 @@ export async function deleteWeeklyTask(id: string): Promise<void> {
 }
 
 export async function reorderWeeklyTasks(topicId: string, ids: string[]): Promise<void> {
-  const connection = await pool.getConnection();
+  const connection = await pool.connect();
   try {
-    await connection.beginTransaction();
-    const [rows] = await connection.execute(
-      'SELECT id FROM `weekly_task` WHERE topic_id = ? ORDER BY week_number, assigned_date',
+    await connection.query('BEGIN');
+    const { rows } = await connection.query(
+      normalizeSql('SELECT id FROM `weekly_task` WHERE topic_id = ? ORDER BY week_number, assigned_date'),
       [topicId]
     );
-    const existing = (rows as Array<{ id: string }>).map(row => String(row.id));
+    const existing = rows.map(row => String(row.id));
     if (existing.length !== ids.length || existing.some(id => !ids.includes(id))) {
       throw new Error('Task order must contain every task in the topic exactly once');
     }
     for (let index = 0; index < ids.length; index++) {
-      await connection.execute('UPDATE `weekly_task` SET week_number = ? WHERE id = ?', [index + 1, ids[index]]);
+      await connection.query(normalizeSql('UPDATE `weekly_task` SET week_number = ? WHERE id = ?'), [index + 1, ids[index]]);
     }
-    await connection.commit();
+    await connection.query('COMMIT');
   } catch (error) {
-    await connection.rollback();
+    await connection.query('ROLLBACK');
     throw error;
   } finally {
     connection.release();
@@ -303,17 +309,26 @@ export async function getOverdueSubmissions(): Promise<Submission[]> {
 }
 
 export async function markExpiredSubmissionsOverdue(): Promise<string[]> {
-  await execute(
-    `INSERT IGNORE INTO \`submission\` (user_id, weekly_task_id, milestone_type, status)
-     SELECT u.id, wt.id, milestones.milestone, "pending"
+  const missing = await query<{ user_id: string; weekly_task_id: string; milestone_type: string }>(
+    `SELECT u.id AS user_id, wt.id AS weekly_task_id, milestone.value #>> '{}' AS milestone_type
        FROM \`user\` u
        JOIN \`weekly_task\` wt ON wt.due_date < NOW()
-       JOIN JSON_TABLE(
-         wt.required_milestones,
-         '$[*]' COLUMNS (milestone VARCHAR(32) PATH '$')
-       ) milestones
-      WHERE u.role = "member"`
+       CROSS JOIN LATERAL jsonb_array_elements(wt.required_milestones::jsonb) AS milestone(value)
+      WHERE u.role = "member"
+        AND NOT EXISTS (
+          SELECT 1
+            FROM \`submission\` existing
+           WHERE existing.user_id = u.id
+             AND existing.weekly_task_id = wt.id
+             AND existing.milestone_type = milestone.value #>> '{}'
+        )`
   );
+  for (const item of missing) {
+    await execute(
+      'INSERT INTO `submission` (id, user_id, weekly_task_id, milestone_type, status) VALUES (?, ?, ?, ?, ?)',
+      [randomUUID(), item.user_id, item.weekly_task_id, item.milestone_type, 'pending']
+    );
+  }
   const expired = await query<Submission>(
     'SELECT s.* FROM `submission` s JOIN `weekly_task` wt ON s.weekly_task_id = wt.id WHERE s.status = "pending" AND wt.due_date < NOW()'
   );

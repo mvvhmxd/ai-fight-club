@@ -9,7 +9,7 @@
 - [x] Set up build configuration (Vite for client, tsc for server)
 
 ## Phase 2: Database & Authentication ✅
-- [x] Create MySQL schema with 10 tables
+- [x] Create PostgreSQL schema with 10 tables
 - [x] Implement database connection pool
 - [x] Create database query helpers
 - [x] Implement bcrypt password hashing

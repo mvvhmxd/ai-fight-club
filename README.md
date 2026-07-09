@@ -21,14 +21,14 @@ This is not yet production-ready. Curriculum editing, task creation UI, discussi
 ## Stack
 
 - React 18, React Router, Axios, and Vite
-- Express and TypeScript
-- MySQL 8
+- Express and TypeScript, deployable as Vercel Functions
+- PostgreSQL on Neon
 - bcrypt and JWT
 - Vitest and Testing Library
 
 ## Setup
 
-Requirements: Node.js 20.19+ and MySQL 8.
+Requirements: Node.js 20.19+ and PostgreSQL. Neon is recommended for the free hosted database.
 
 ```bash
 npm install
@@ -41,6 +41,34 @@ npm run dev
 The frontend runs at `http://localhost:5173` and proxies `/api` to the backend at `http://localhost:3000`.
 
 For production, `JWT_SECRET` is mandatory; startup fails if it is absent. `GITHUB_TOKEN` is optional but recommended to avoid GitHub’s low anonymous API rate limit.
+
+## Deploying on the free stack
+
+This repository is configured for Vercel frontend + Vercel API functions + Neon PostgreSQL.
+
+1. Create a free Neon project and copy its Postgres connection string.
+2. In Vercel, set these environment variables:
+   - `DATABASE_URL` = your Neon connection string
+   - `JWT_SECRET` = a long random secret
+   - `CRON_SECRET` optional, used to protect the overdue-processing cron endpoint
+   - `NODE_ENV=production`
+   - `GITHUB_TOKEN` optional
+   - `VITE_API_URL` can be omitted for same-origin Vercel API calls
+3. Run the migration against Neon:
+
+```bash
+DATABASE_URL="your-neon-url" npm run db:migrate
+```
+
+For demo data only:
+
+```bash
+DATABASE_URL="your-neon-url" npm run db:seed
+```
+
+Vercel builds the React app into `dist/client`. Requests under `/api/*` are routed to the Express app exported from `api/index.ts`; other routes are served by the React app.
+
+The old local overdue timer is replaced in production by a daily Vercel Cron at `/api/cron/overdue`, which is friendlier to free/Hobby deployments than a five-minute timer.
 
 ## Verification
 
@@ -70,4 +98,4 @@ The seed script replaces existing application data and should only be used in de
 
 ## Remaining work
 
-The most important remaining areas are request validation, rate limiting, transaction boundaries, integration tests against MySQL, curriculum/task administration, discussion sessions, and deployment operations.
+The most important remaining areas are request validation, rate limiting, transaction boundaries, integration tests against PostgreSQL, curriculum/task administration, discussion sessions, and deployment operations.

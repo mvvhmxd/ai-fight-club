@@ -1,144 +1,137 @@
--- AI Fight Club Database Schema
--- 10 tables for accountability platform
+-- AI Fight Club PostgreSQL schema
+-- Designed for Neon Postgres and Vercel Functions.
 
-CREATE TABLE IF NOT EXISTS `user` (
-  `id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  `name` VARCHAR(255) NOT NULL,
-  `email` VARCHAR(255) NOT NULL UNIQUE,
-  `password_hash` VARCHAR(255) NOT NULL,
-  `role` ENUM('member', 'admin') NOT NULL DEFAULT 'member',
-  `joined_date` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `current_stage_id` VARCHAR(36),
-  `timezone` VARCHAR(50) DEFAULT 'UTC',
-  `is_blocked` BOOLEAN DEFAULT FALSE,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX `idx_email` (`email`),
-  INDEX `idx_role` (`role`),
-  INDEX `idx_is_blocked` (`is_blocked`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS "user" (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'member' CHECK (role IN ('member', 'admin')),
+  joined_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  current_stage_id TEXT,
+  timezone TEXT DEFAULT 'UTC',
+  is_blocked BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
-CREATE TABLE IF NOT EXISTS `stage` (
-  `id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  `name` VARCHAR(255) NOT NULL,
-  `order_index` INT NOT NULL,
-  `description` TEXT,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY `unique_order` (`order_index`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE INDEX IF NOT EXISTS idx_user_email ON "user" (email);
+CREATE INDEX IF NOT EXISTS idx_user_role ON "user" (role);
+CREATE INDEX IF NOT EXISTS idx_user_is_blocked ON "user" (is_blocked);
 
-CREATE TABLE IF NOT EXISTS `topic` (
-  `id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  `stage_id` VARCHAR(36) NOT NULL,
-  `name` VARCHAR(255) NOT NULL,
-  `order_index` INT NOT NULL,
-  `resources` JSON,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (`stage_id`) REFERENCES `stage`(`id`) ON DELETE CASCADE,
-  INDEX `idx_stage_id` (`stage_id`),
-  UNIQUE KEY `unique_topic_order` (`stage_id`, `order_index`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS stage (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  order_index INTEGER NOT NULL UNIQUE,
+  description TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
-CREATE TABLE IF NOT EXISTS `weekly_task` (
-  `id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  `topic_id` VARCHAR(36) NOT NULL,
-  `week_number` INT NOT NULL,
-  `assigned_date` TIMESTAMP NOT NULL,
-  `due_date` TIMESTAMP NOT NULL,
-  `required_milestones` JSON NOT NULL,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (`topic_id`) REFERENCES `topic`(`id`) ON DELETE CASCADE,
-  INDEX `idx_topic_id` (`topic_id`),
-  INDEX `idx_due_date` (`due_date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS topic (
+  id TEXT PRIMARY KEY,
+  stage_id TEXT NOT NULL REFERENCES stage(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  order_index INTEGER NOT NULL,
+  resources JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (stage_id, order_index)
+);
 
-CREATE TABLE IF NOT EXISTS `submission` (
-  `id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  `user_id` VARCHAR(36) NOT NULL,
-  `weekly_task_id` VARCHAR(36) NOT NULL,
-  `milestone_type` ENUM('reading', 'video', 'notes', 'coding', 'mini_project', 'quiz', 'discussion') NOT NULL,
-  `status` ENUM('pending', 'submitted', 'in_review', 'approved', 'rejected', 'overdue', 'excused') NOT NULL DEFAULT 'pending',
-  `submitted_at` TIMESTAMP NULL,
-  `github_url` VARCHAR(500),
-  `notes_content` LONGTEXT,
-  `quiz_score` INT,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`weekly_task_id`) REFERENCES `weekly_task`(`id`) ON DELETE CASCADE,
-  INDEX `idx_user_id` (`user_id`),
-  INDEX `idx_weekly_task_id` (`weekly_task_id`),
-  INDEX `idx_status` (`status`),
-  UNIQUE KEY `unique_submission` (`user_id`, `weekly_task_id`, `milestone_type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE INDEX IF NOT EXISTS idx_topic_stage_id ON topic (stage_id);
 
-CREATE TABLE IF NOT EXISTS `review` (
-  `id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  `submission_id` VARCHAR(36) NOT NULL,
-  `reviewer_id` VARCHAR(36) NOT NULL,
-  `feedback` LONGTEXT NULL,
-  `decision` ENUM('approve', 'changes_requested', 'reject') NULL,
-  `reviewed_at` TIMESTAMP NULL,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (`submission_id`) REFERENCES `submission`(`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`reviewer_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
-  INDEX `idx_submission_id` (`submission_id`),
-  INDEX `idx_reviewer_id` (`reviewer_id`),
-  UNIQUE KEY `unique_review` (`submission_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS weekly_task (
+  id TEXT PRIMARY KEY,
+  topic_id TEXT NOT NULL REFERENCES topic(id) ON DELETE CASCADE,
+  week_number INTEGER NOT NULL,
+  assigned_date TIMESTAMPTZ NOT NULL,
+  due_date TIMESTAMPTZ NOT NULL,
+  required_milestones JSONB NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
 
-CREATE TABLE IF NOT EXISTS `streak` (
-  `user_id` VARCHAR(36) PRIMARY KEY,
-  `current_streak_weeks` INT NOT NULL DEFAULT 0,
-  `longest_streak_weeks` INT NOT NULL DEFAULT 0,
-  `last_complete_week` TIMESTAMP NULL,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE INDEX IF NOT EXISTS idx_weekly_task_topic_id ON weekly_task (topic_id);
+CREATE INDEX IF NOT EXISTS idx_weekly_task_due_date ON weekly_task (due_date);
 
-CREATE TABLE IF NOT EXISTS `achievement` (
-  `id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  `user_id` VARCHAR(36) NOT NULL,
-  `type` ENUM('streak_4', 'streak_12', 'stage_complete', 'capstone_complete', 'first_review_given', 'first_submission', 'perfect_week') NOT NULL,
-  `earned_at` TIMESTAMP NOT NULL,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
-  INDEX `idx_user_id` (`user_id`),
-  INDEX `idx_type` (`type`),
-  UNIQUE KEY `unique_achievement` (`user_id`, `type`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS submission (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  weekly_task_id TEXT NOT NULL REFERENCES weekly_task(id) ON DELETE CASCADE,
+  milestone_type TEXT NOT NULL CHECK (milestone_type IN ('reading', 'video', 'notes', 'coding', 'mini_project', 'quiz', 'discussion')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'submitted', 'in_review', 'approved', 'rejected', 'overdue', 'excused')),
+  submitted_at TIMESTAMPTZ NULL,
+  github_url TEXT,
+  notes_content TEXT,
+  quiz_score INTEGER,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, weekly_task_id, milestone_type)
+);
 
-CREATE TABLE IF NOT EXISTS `discussion_session` (
-  `id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  `topic_id` VARCHAR(36) NOT NULL,
-  `scheduled_at` TIMESTAMP NOT NULL,
-  `host_id` VARCHAR(36) NOT NULL,
-  `attendee_ids` JSON,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (`topic_id`) REFERENCES `topic`(`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`host_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
-  INDEX `idx_topic_id` (`topic_id`),
-  INDEX `idx_scheduled_at` (`scheduled_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE INDEX IF NOT EXISTS idx_submission_user_id ON submission (user_id);
+CREATE INDEX IF NOT EXISTS idx_submission_weekly_task_id ON submission (weekly_task_id);
+CREATE INDEX IF NOT EXISTS idx_submission_status ON submission (status);
 
-CREATE TABLE IF NOT EXISTS `excuse` (
-  `id` VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  `submission_id` VARCHAR(36) NOT NULL,
-  `granted_by_admin_id` VARCHAR(36) NOT NULL,
-  `reason` TEXT NOT NULL,
-  `granted_at` TIMESTAMP NOT NULL,
-  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (`submission_id`) REFERENCES `submission`(`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`granted_by_admin_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,
-  INDEX `idx_submission_id` (`submission_id`),
-  INDEX `idx_admin_id` (`granted_by_admin_id`),
-  UNIQUE KEY `unique_excuse` (`submission_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS review (
+  id TEXT PRIMARY KEY,
+  submission_id TEXT NOT NULL UNIQUE REFERENCES submission(id) ON DELETE CASCADE,
+  reviewer_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  feedback TEXT NULL,
+  decision TEXT NULL CHECK (decision IS NULL OR decision IN ('approve', 'changes_requested', 'reject')),
+  reviewed_at TIMESTAMPTZ NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_review_submission_id ON review (submission_id);
+CREATE INDEX IF NOT EXISTS idx_review_reviewer_id ON review (reviewer_id);
+
+CREATE TABLE IF NOT EXISTS streak (
+  user_id TEXT PRIMARY KEY REFERENCES "user"(id) ON DELETE CASCADE,
+  current_streak_weeks INTEGER NOT NULL DEFAULT 0,
+  longest_streak_weeks INTEGER NOT NULL DEFAULT 0,
+  last_complete_week TIMESTAMPTZ NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS achievement (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('streak_4', 'streak_12', 'stage_complete', 'capstone_complete', 'first_review_given', 'first_submission', 'perfect_week')),
+  earned_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (user_id, type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_achievement_user_id ON achievement (user_id);
+CREATE INDEX IF NOT EXISTS idx_achievement_type ON achievement (type);
+
+CREATE TABLE IF NOT EXISTS discussion_session (
+  id TEXT PRIMARY KEY,
+  topic_id TEXT NOT NULL REFERENCES topic(id) ON DELETE CASCADE,
+  scheduled_at TIMESTAMPTZ NOT NULL,
+  host_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  attendee_ids JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_discussion_session_topic_id ON discussion_session (topic_id);
+CREATE INDEX IF NOT EXISTS idx_discussion_session_scheduled_at ON discussion_session (scheduled_at);
+
+CREATE TABLE IF NOT EXISTS excuse (
+  id TEXT PRIMARY KEY,
+  submission_id TEXT NOT NULL UNIQUE REFERENCES submission(id) ON DELETE CASCADE,
+  granted_by_admin_id TEXT NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+  reason TEXT NOT NULL,
+  granted_at TIMESTAMPTZ NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_excuse_submission_id ON excuse (submission_id);
+CREATE INDEX IF NOT EXISTS idx_excuse_admin_id ON excuse (granted_by_admin_id);

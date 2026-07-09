@@ -1,0 +1,21 @@
+{
+  "buildCommand": "npm run build:client",
+  "outputDirectory": "dist/client",
+  "installCommand": "npm install",
+  "crons": [
+    {
+      "path": "/api/cron/overdue",
+      "schedule": "0 0 * * *"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

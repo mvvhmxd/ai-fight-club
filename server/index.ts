@@ -159,6 +159,24 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.json({ status: 'ok' });
 });
 
+app.get('/api/cron/overdue', async (req: Request, res: Response) => {
+  const expectedSecret = process.env.CRON_SECRET;
+  if (expectedSecret) {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (token !== expectedSecret) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  }
+
+  try {
+    await processOverdueSubmissions();
+    res.json({ status: 'ok' });
+  } catch (error) {
+    console.error('Overdue cron failed:', error);
+    res.status(500).json({ error: 'Overdue cron failed' });
+  }
+});
+
 // Mount API routers (require auth)
 app.use('/api', authMiddleware, apiRouters);
 
@@ -168,15 +186,16 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 AI Fight Club server running on http://localhost:${PORT}`);
-  processOverdueSubmissions().catch(error => console.error('Overdue processing failed:', error));
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`?? AI Fight Club server running on http://localhost:${PORT}`);
+    processOverdueSubmissions().catch(error => console.error('Overdue processing failed:', error));
+  });
 
-const overdueTimer = setInterval(() => {
-  processOverdueSubmissions().catch(error => console.error('Overdue processing failed:', error));
-}, 5 * 60 * 1000);
-overdueTimer.unref();
+  const overdueTimer = setInterval(() => {
+    processOverdueSubmissions().catch(error => console.error('Overdue processing failed:', error));
+  }, 5 * 60 * 1000);
+  overdueTimer.unref();
+}
 
 export default app;

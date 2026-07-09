@@ -7,6 +7,6 @@
     "rootDir": ".",
     "moduleResolution": "bundler"
   },
-  "include": ["server/**/*", "shared/**/*", "../shared/**/*"],
+  "include": ["api/**/*", "server/**/*", "shared/**/*", "../shared/**/*"],
   "exclude": ["node_modules", "client", "dist", "scripts", "**/*.test.ts"]
 }
