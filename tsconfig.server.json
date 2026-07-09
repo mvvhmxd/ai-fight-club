@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ES2020",
+    "outDir": "./dist",
+    "rootDir": ".",
+    "moduleResolution": "bundler"
+  },
+  "include": ["server/**/*", "shared/**/*", "../shared/**/*"],
+  "exclude": ["node_modules", "client", "dist", "scripts", "**/*.test.ts"]
+}
