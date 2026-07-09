@@ -3,11 +3,15 @@ import jwt from 'jsonwebtoken';
 import { User } from '../shared/schema';
 
 const configuredSecret = process.env.JWT_SECRET;
-if (process.env.NODE_ENV === 'production' && !configuredSecret) {
-  throw new Error('JWT_SECRET is required when NODE_ENV=production');
-}
 const JWT_SECRET = configuredSecret || 'development-only-secret-do-not-deploy';
 const JWT_EXPIRY = '7d';
+
+function getJwtSecret(): string {
+  if (process.env.NODE_ENV === 'production' && !configuredSecret) {
+    throw new Error('JWT_SECRET is required when NODE_ENV=production');
+  }
+  return JWT_SECRET;
+}
 
 export async function hashPassword(password: string): Promise<string> {
   const salt = await bcrypt.genSalt(10);
@@ -26,14 +30,14 @@ export function generateToken(user: User): string {
       role: user.role,
       is_blocked: user.is_blocked,
     },
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: JWT_EXPIRY }
   );
 }
 
 export function verifyToken(token: string): any {
   try {
-    return jwt.verify(token, JWT_SECRET);
+    return jwt.verify(token, getJwtSecret());
   } catch (error) {
     return null;
   }
