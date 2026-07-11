@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import type { User } from '../shared/schema';
+import type { User } from '../shared/schema.js';
 
 const configuredSecret = process.env.JWT_SECRET;
 const JWT_SECRET = configuredSecret || 'development-only-secret-do-not-deploy';

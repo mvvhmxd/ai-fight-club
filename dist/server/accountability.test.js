@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isTaskComplete, missingAchievementTypes, nextStreak, weekKey } from './accountability';
+import { isTaskComplete, missingAchievementTypes, nextStreak, weekKey } from './accountability.js';
 const task = {
     id: 'task-1',
     topic_id: 'topic-1',

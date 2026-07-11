@@ -2,11 +2,11 @@ import 'dotenv/config';
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import { getUserByEmail, createUser, getAllUsers, getUserById, updateUserBlockStatus, getStreakByUserId, createStreak } from './db.ts';
-import { hashPassword, verifyPassword, generateToken, decodeToken } from './auth.ts';
-import type { AuthPayload } from './auth.ts';
-import type { User } from '../shared/schema';
-import apiRouters, { processOverdueSubmissions } from './routers.ts';
+import { getUserByEmail, createUser, getAllUsers, getUserById, updateUserBlockStatus, getStreakByUserId, createStreak } from './db.js';
+import { hashPassword, verifyPassword, generateToken, decodeToken } from './auth.js';
+import type { AuthPayload } from './auth.js';
+import type { User } from '../shared/schema.js';
+import apiRouters, { processOverdueSubmissions } from './routers.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;

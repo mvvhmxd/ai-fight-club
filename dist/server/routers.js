@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { getStages, getTopicsByStageId, getWeeklyTasksByTopicId, getSubmissionsByUserId, createSubmission, updateSubmissionStatus, getReviewsByReviewerId, getReviewBySubmissionId, getStreakByUserId, updateStreak, getAchievementsByUserId, createAchievement, createExcuse, getUserById, updateUserBlockStatus, getWeeklyTaskById, getSubmissionById, getAllUsers, getOverdueSubmissions, createReviewAssignment, completeReview, findReviewerForSubmission, markExpiredSubmissionsOverdue, hasOverdueSubmissions, getAllTopics, getAllWeeklyTasks, hasCompletedReview, getAllReviews, createStage, updateStage, createTopic, updateTopic, createWeeklyTask, updateWeeklyTask, deleteStage, deleteTopic, deleteWeeklyTask, reorderStages, reorderTopics, reorderWeeklyTasks, } from './db';
-import { isTaskComplete, isTopicComplete, missingAchievementTypes, nextStreak, weekKey } from './accountability';
-import { verifyGitHubRepository } from './github';
+import { getStages, getTopicsByStageId, getWeeklyTasksByTopicId, getSubmissionsByUserId, createSubmission, updateSubmissionStatus, getReviewsByReviewerId, getReviewBySubmissionId, getStreakByUserId, updateStreak, getAchievementsByUserId, createAchievement, createExcuse, getUserById, updateUserBlockStatus, getWeeklyTaskById, getSubmissionById, getAllUsers, getOverdueSubmissions, createReviewAssignment, completeReview, findReviewerForSubmission, markExpiredSubmissionsOverdue, hasOverdueSubmissions, getAllTopics, getAllWeeklyTasks, hasCompletedReview, getAllReviews, createStage, updateStage, createTopic, updateTopic, createWeeklyTask, updateWeeklyTask, deleteStage, deleteTopic, deleteWeeklyTask, reorderStages, reorderTopics, reorderWeeklyTasks, } from './db.js';
+import { isTaskComplete, isTopicComplete, missingAchievementTypes, nextStreak, weekKey } from './accountability.js';
+import { verifyGitHubRepository } from './github.js';
 const router = Router();
 const milestoneTypes = ['reading', 'video', 'notes', 'coding', 'mini_project', 'quiz', 'discussion'];
 const positiveInteger = (value) => Number.isInteger(Number(value)) && Number(value) > 0;

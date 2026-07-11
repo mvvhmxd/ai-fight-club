@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { parseGitHubRepository, verifyGitHubRepository } from './github';
+import { parseGitHubRepository, verifyGitHubRepository } from './github.js';
 describe('GitHub verification', () => {
     it('accepts only canonical GitHub repository URLs', () => {
         expect(parseGitHubRepository('https://github.com/openai/openai-node.git'))

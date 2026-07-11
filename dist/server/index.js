@@ -1,9 +1,9 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { getUserByEmail, createUser, getUserById, createStreak } from './db';
-import { hashPassword, verifyPassword, generateToken, decodeToken } from './auth';
-import apiRouters, { processOverdueSubmissions } from './routers';
+import { getUserByEmail, createUser, getUserById, createStreak } from './db.js';
+import { hashPassword, verifyPassword, generateToken, decodeToken } from './auth.js';
+import apiRouters, { processOverdueSubmissions } from './routers.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 // Middleware

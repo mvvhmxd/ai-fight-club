@@ -1,4 +1,4 @@
-import type { Achievement, Submission, Topic, WeeklyTask } from '../shared/schema';
+import type { Achievement, Submission, Topic, WeeklyTask } from '../shared/schema.js';
 
 type Milestone = Submission['milestone_type'];
 

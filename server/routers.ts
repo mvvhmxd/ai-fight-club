@@ -14,11 +14,11 @@ import {
   createWeeklyTask, updateWeeklyTask,
   deleteStage, deleteTopic, deleteWeeklyTask,
   reorderStages, reorderTopics, reorderWeeklyTasks,
-} from './db.ts';
-import type { AuthPayload } from './auth.ts';
-import type { User } from '../shared/schema';
-import { isTaskComplete, isTopicComplete, missingAchievementTypes, nextStreak, weekKey } from './accountability.ts';
-import { verifyGitHubRepository } from './github.ts';
+} from './db.js';
+import type { AuthPayload } from './auth.js';
+import type { User } from '../shared/schema.js';
+import { isTaskComplete, isTopicComplete, missingAchievementTypes, nextStreak, weekKey } from './accountability.js';
+import { verifyGitHubRepository } from './github.js';
 
 const router = Router();
 const milestoneTypes = ['reading', 'video', 'notes', 'coding', 'mini_project', 'quiz', 'discussion'] as const;
