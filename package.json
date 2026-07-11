@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "AI Fight Club - Accountability platform for AI engineering students",
   "type": "module",
-  "main": "server/index.js",
+  "main": "dist/server/index.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "tsx watch server/index.ts",
