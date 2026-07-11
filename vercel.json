@@ -1,16 +1,6 @@
 {
   "buildCommand": "npm run build",
   "installCommand": "npm install --include=dev",
-  "serverless": {
-    "memory": 1024,
-    "maxDuration": 60
-  },
-  "functions": {
-    "api/**/*.ts": {
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  },
   "rewrites": [
     {
       "source": "/api/:path*",
